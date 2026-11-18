@@ -254,3 +254,119 @@ body {
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--sm-line-strong); border-radius: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================
+   v0.2：查找替换 / 排序 / 多级撤销 / 预设
+   ============================================================ */
+
+/* 侧栏模式切换 */
+.tabs { display: inline-flex; align-items: center; gap: 2px; }
+
+.tabs button {
+  height: 22px; padding: 0 10px;
+  border: 1px solid transparent; border-radius: var(--sm-r-control);
+  background: transparent; color: var(--sm-fg-3);
+  font: inherit; font-size: 10.5px; letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color var(--sm-dur-hover) var(--sm-ease), background var(--sm-dur-hover) var(--sm-ease),
+    border-color var(--sm-dur-hover) var(--sm-ease);
+}
+
+.tabs button:hover { color: var(--sm-fg-2); background: var(--sm-hover-2); }
+.tabs button.on { color: var(--sm-gold); border-color: var(--sm-gold-line); background: var(--sm-gold-a04); }
+.tabs button:focus-visible { outline: 1px solid var(--sm-gold); outline-offset: 1px; }
+
+/* 列表头的排序按钮 */
+.sort {
+  display: inline-flex; align-items: center; gap: 3px;
+  height: 20px; padding: 0 6px;
+  border: 0; border-radius: 2px;
+  background: transparent; color: var(--sm-fg-3);
+  font: inherit; font-size: 10px; cursor: pointer;
+  transition: color var(--sm-dur-hover) var(--sm-ease), background var(--sm-dur-hover) var(--sm-ease);
+}
+
+.sort:hover { color: var(--sm-fg); background: var(--sm-hover-3); }
+.sort.on { color: var(--sm-gold); }
+.sort i { font-style: normal; font-size: 9px; }
+
+.divider {
+  width: 1px; height: 12px;
+  background: var(--sm-line-strong);
+  margin: 0 3px;
+}
+
+/* 分段控件（扩展名三档） */
+.seg { display: inline-flex; border: 1px solid var(--sm-line-strong); border-radius: var(--sm-r-control); overflow: hidden; }
+
+.seg button {
+  flex: 1;
+  height: 22px; padding: 0 8px;
+  border: 0; border-right: 1px solid var(--sm-line-strong);
+  background: transparent; color: var(--sm-fg-3);
+  font: inherit; font-size: 10px; cursor: pointer;
+  transition: background var(--sm-dur-hover) var(--sm-ease), color var(--sm-dur-hover) var(--sm-ease);
+}
+
+.seg button:last-child { border-right: 0; }
+.seg button:hover { color: var(--sm-fg); background: var(--sm-hover-2); }
+.seg button.on { color: var(--sm-gold); background: var(--sm-gold-a08); }
+.seg.wide { width: 100%; }
+
+/* 字段标题里的行内按钮 */
+.field .label .link { margin-left: auto; }
+
+/* 预设方案 */
+.presets { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.preset {
+  display: inline-flex; align-items: center;
+  height: 22px;
+  border: 1px solid var(--sm-line);
+  border-radius: var(--sm-r-control);
+  background: var(--sm-hover-2);
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.preset-use {
+  max-width: 168px;
+  padding: 0 6px;
+  border: 0; background: transparent; color: var(--sm-fg-2);
+  font: inherit; font-size: 9.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer;
+}
+
+.preset-use:hover { color: var(--sm-gold); }
+
+.preset-x {
+  width: 16px; height: 100%;
+  border: 0; background: transparent; color: var(--sm-fg-3);
+  font: inherit; font-size: 11px; line-height: 1; cursor: pointer;
+}
+
+.preset-x:hover { color: var(--sm-danger); background: var(--sm-hover-4); }
+
+/* 提示行 */
+.more.bad { color: var(--sm-danger); }
+
+/* 字段标题：文字在左、行内操作在右 */
+.field .label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.field .label .link { letter-spacing: 0.04em; }
+
+/* 字段标题：文字在左、行内操作在右 */
+.field .label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.field .label .link { letter-spacing: 0.04em; }

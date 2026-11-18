@@ -88,6 +88,8 @@ struct Entry {
     is_dir: bool,
     size: u64,
     ext: String,
+    /// 修改时间（秒），用于按时间排序与 {date} 变量
+    modified: u64,
 }
 
 #[tauri::command]
@@ -111,6 +113,12 @@ fn list_entries(dir: String, include_dirs: bool) -> Vec<Entry> {
             is_dir,
             size: meta.as_ref().map(|m| m.len()).unwrap_or(0),
             ext,
+            modified: meta
+                .as_ref()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
         });
         if out.len() >= 2000 {
             break;
@@ -131,13 +139,24 @@ struct Pair {
 struct Report {
     renamed: u64,
     errors: Vec<String>,
-    undoable: bool,
+    /// 还能撤销几次
+    undo_depth: u64,
+}
+
+/// 一次成功改名的记录：目录 + 反向映射（新名 → 原名）。
+struct UndoEntry {
+    dir: String,
+    pairs: Vec<(String, String)>,
 }
 
 #[derive(Default)]
 struct UndoState {
-    dir: Mutex<String>,
-    pairs: Mutex<Vec<(String, String)>>,
+    /// 撤销栈：可连续回退多次
+    stack: Mutex<Vec<UndoEntry>>,
+}
+
+fn depth(state: &UndoState) -> u64 {
+    state.stack.lock().map(|g| g.len() as u64).unwrap_or(0)
 }
 
 /* 两阶段改名：from → __sm_tmp_i → to。
@@ -206,43 +225,53 @@ fn rename_apply(state: State<'_, Arc<UndoState>>, dir: String, pairs: Vec<Pair>)
     };
 
     if !done.is_empty() {
-        if let Ok(mut d) = state.dir.lock() {
-            *d = dir.clone();
-        }
-        if let Ok(mut p) = state.pairs.lock() {
-            *p = done.iter().map(|(from, to)| (to.clone(), from.clone())).collect();
+        let back: Vec<(String, String)> =
+            done.iter().map(|(from, to)| (to.clone(), from.clone())).collect();
+        if let Ok(mut stack) = state.stack.lock() {
+            stack.push(UndoEntry { dir: dir.clone(), pairs: back });
+            // 只保留最近 20 次，避免长时间运行栈无限长
+            if stack.len() > 20 {
+                stack.remove(0);
+            }
         }
     }
 
     Ok(Report {
         renamed: done.len() as u64,
         errors,
-        undoable: !done.is_empty(),
+        undo_depth: depth(&state),
     })
 }
 
-/// 撤销上一次成功执行。
+/// 撤销最近一次成功执行（可连续调用，逐级回退）。
 #[tauri::command]
 fn rename_undo(state: State<'_, Arc<UndoState>>) -> Result<Report, String> {
-    let dir = state.dir.lock().map(|g| g.clone()).unwrap_or_default();
-    let pairs = state.pairs.lock().map(|g| g.clone()).unwrap_or_default();
-    if dir.is_empty() || pairs.is_empty() {
-        return Err("没有可撤销的操作".into());
-    }
+    let entry = state
+        .stack
+        .lock()
+        .map_err(|e| e.to_string())?
+        .pop()
+        .ok_or_else(|| "没有可撤销的操作".to_string())?;
 
-    let result = two_phase(Path::new(&dir), &pairs);
+    let result = two_phase(Path::new(&entry.dir), &entry.pairs);
     let (done, errors) = match result {
         Ok(done) => (done, Vec::new()),
         Err(errors) => (Vec::new(), errors),
     };
 
-    if !done.is_empty() {
-        if let Ok(mut p) = state.pairs.lock() {
-            p.clear();
+    // 一个都没改成功就把记录放回去，别让撤销栈白白少一条
+    if done.is_empty() && !errors.is_empty() {
+        if let Ok(mut stack) = state.stack.lock() {
+            stack.push(entry);
         }
+        return Err(errors.join("；"));
     }
 
-    Ok(Report { renamed: done.len() as u64, errors, undoable: false })
+    Ok(Report {
+        renamed: done.len() as u64,
+        errors,
+        undo_depth: depth(&state),
+    })
 }
 
 #[tauri::command]
