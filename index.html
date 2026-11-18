@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shadowmoon Rename</title>
+    <script>
+      (function () {
+        try {
+          var p = JSON.parse(localStorage.getItem("shadowmoon.prefs.v1") || "{}");
+          var mode = p.theme === "light" || p.theme === "dark" || p.theme === "system" ? p.theme : "dark";
+          var theme = mode === "system"
+            ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+            : mode;
+          var root = document.documentElement;
+          root.dataset.theme = theme;
+          root.style.colorScheme = theme;
+          root.lang = p.locale === "en" ? "en" : p.locale === "zh" ? "zh-CN" : (navigator.language || "zh-CN");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
